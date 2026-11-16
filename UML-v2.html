@@ -1,0 +1,306 @@
+<script type="text/plain" id="src">
+classDiagram
+direction TB
+
+class Posicao {
+  <<enumeration>>
+  GOLEIRO
+  ZAGUEIRO
+  MEIO_CAMPO
+  ATACANTE
+  +isLinha() boolean
+}
+class StatusRacha {
+  <<enumeration>>
+  ABERTO
+  TIMES_SORTEADOS
+  FASE_DE_GRUPOS
+  ELIMINATORIAS
+  FINALIZADO
+  +permiteConfirmacao() boolean
+}
+class TipoEstatistica {
+  <<enumeration>>
+  CAMPEAO
+  ARTILHARIA
+  ASSISTENCIA
+  GOLEIRO_MENOS_VAZADO
+}
+
+class Pagavel {
+  <<interface>>
+  +calcularValorAPagar(BigDecimal custoPorPessoa) BigDecimal
+  +isIsento() boolean
+}
+class Avaliavel {
+  <<interface>>
+  +getNotaGeral() double
+  +atualizarNota(double notaDoRacha) void
+}
+class EstrategiaSorteio {
+  <<interface>>
+  +sortear(List~Jogador~ confirmados, int qtdTimes) List~Time~
+}
+
+class RuntimeException {
+  <<Java>>
+}
+class RachaException {
+  <<exception>>
+  +RachaException(String mensagem)
+}
+class CadastroInvalidoException {
+  <<exception>>
+  -String campo
+  +getCampo() String
+}
+class JogadorNaoConfirmadoException {
+  <<exception>>
+  -Long jogadorId
+  +getJogadorId() Long
+}
+class SorteioInvalidoException {
+  <<exception>>
+  -int minimoNecessario
+  +getMinimoNecessario() int
+}
+class NotaInvalidaException {
+  <<exception>>
+  -double notaInformada
+  +getNotaInformada() double
+}
+class TorneioInvalidoException {
+  <<exception>>
+}
+
+class Jogador {
+  <<abstract>>
+  -Long id
+  -String nome
+  -Posicao posicao
+  -List~Double~ historicoNotas
+  -EstatisticaJogador estatisticas
+  +Jogador(Long id, String nome, Posicao posicao, double notaInicial)
+  +getNome() String
+  +getPosicao() Posicao
+  +getEstatisticas() EstatisticaJogador
+  +getNotaGeral() double
+  +atualizarNota(double notaDoRacha) void
+  #validarNota(double nota) void
+  +isGoleiro()* boolean
+  +calcularValorAPagar(BigDecimal custoPorPessoa)* BigDecimal
+  +isIsento() boolean
+  +equals(Object o) boolean
+  +hashCode() int
+  +toString() String
+}
+class JogadorDeLinha {
+  +JogadorDeLinha(Long id, String nome, Posicao posicao, double notaInicial)
+  +isGoleiro() boolean
+  +calcularValorAPagar(BigDecimal custoPorPessoa) BigDecimal
+}
+class Goleiro {
+  +Goleiro(Long id, String nome, double notaInicial)
+  +isGoleiro() boolean
+  +calcularValorAPagar(BigDecimal custoPorPessoa) BigDecimal
+  +getMediaGolsSofridos() OptionalDouble
+}
+class EstatisticaJogador {
+  -int gols
+  -int assistencias
+  -int golsSofridos
+  -int vitorias
+  -int titulos
+  -int partidasJogadas
+  +registrarPartida(int gols, int assistencias, int golsSofridos, boolean venceu) void
+  +registrarTitulo() void
+}
+
+class CadastroJogadores {
+  -Map~Long,Jogador~ jogadores
+  +cadastrarJogador(String nome, Posicao posicao, double notaInicial) Jogador
+  +removerJogador(Long id) void
+  +buscarJogador(Long id) Optional~Jogador~
+  +listarJogadores() List~Jogador~
+}
+
+class Racha {
+  -Long id
+  -LocalDate data
+  -String local
+  -BigDecimal custoTotal
+  -int qtdTimes
+  -StatusRacha status
+  -Set~Jogador~ confirmados
+  -List~Time~ times
+  -FaseDeGrupos faseDeGrupos
+  -FaseEliminatoria faseEliminatoria
+  +confirmarPresenca(Jogador j) void
+  +removerConfirmacao(Jogador j) void
+  +getCustoPorPessoa() BigDecimal
+  +calcularPagamentos() Map~Jogador,BigDecimal~
+  +sortearTimes(EstrategiaSorteio e) void
+  +iniciarFaseDeGrupos(int timesPorGrupo, int classificadosPorGrupo) void
+  +iniciarEliminatorias() void
+  +getPartidas() List~Partida~
+  +getCampeao() Optional~Time~
+  +finalizar() void
+}
+class Time {
+  -String nome
+  -List~Jogador~ jogadores
+  +adicionarJogador(Jogador j) void
+  +getGoleiros() List~Goleiro~
+  +getSomaNotas() double
+  +sugerirEscalacao() Escalacao
+}
+class Escalacao {
+  -Goleiro goleiro
+  -List~Jogador~ linha
+  +getLinhaPorPosicao(Posicao p) List~Jogador~
+}
+
+class Fase {
+  <<abstract>>
+  #List~Partida~ partidas
+  +gerarPartidas()* void
+  +getClassificados()* List~Time~
+  +isConcluida() boolean
+}
+class FaseDeGrupos {
+  -List~Grupo~ grupos
+  -int classificadosPorGrupo
+  +gerarPartidas() void
+  +getClassificados() List~Time~
+}
+class FaseEliminatoria {
+  -int rodadaAtual
+  +gerarPartidas() void
+  +avancarRodada() void
+  +getClassificados() List~Time~
+  +getCampeao() Optional~Time~
+}
+class Grupo {
+  -String nome
+  -List~Time~ times
+  +calcularClassificacao() List~LinhaClassificacao~
+}
+class LinhaClassificacao {
+  -int pontos
+  -int vitorias
+  -int golsPro
+  -int golsContra
+  +getSaldo() int
+}
+
+class Partida {
+  -Long id
+  -Time timeA
+  -Time timeB
+  -int golsA
+  -int golsB
+  -boolean encerrada
+  -List~DesempenhoJogador~ desempenhos
+  +registrarResultado(int golsA, int golsB) void
+  +registrarDesempenho(DesempenhoJogador d) void
+  +getVencedor() Optional~Time~
+  +encerrar() void
+}
+class PartidaEliminatoria {
+  -int penaltisA
+  -int penaltisB
+  +registrarPenaltis(int a, int b) void
+  +getVencedor() Optional~Time~
+}
+class DesempenhoJogador {
+  -Jogador jogador
+  -int gols
+  -int assistencias
+  -double nota
+  +setNota(double nota) void
+}
+
+class SorteioEquilibrado {
+  +sortear(List~Jogador~ confirmados, int qtdTimes) List~Time~
+  -distribuirGoleiros(List~Goleiro~ g, List~Time~ t) void
+  -distribuirLinha(List~Jogador~ l, List~Time~ t) void
+}
+class SorteioAleatorio {
+  -Random random
+  +sortear(List~Jogador~ confirmados, int qtdTimes) List~Time~
+}
+
+class GerenciadorRachas {
+  -List~Racha~ rachas
+  +criarRacha(LocalDate data, String local, BigDecimal custoTotal, int qtdTimes) Racha
+  +confirmarPresenca(Long rachaId, Long jogadorId) void
+  +getProximoRacha() Optional~Racha~
+}
+class RankingService {
+  +rankearPorNota() List~Jogador~
+  +obterLider(TipoEstatistica tipo) LiderEstatistica
+  +artilheirosDoRacha(Racha r) LiderEstatistica
+  +obterTodosLideres() Map~TipoEstatistica,LiderEstatistica~
+}
+class LiderEstatistica {
+  -TipoEstatistica tipo
+  -List~Jogador~ jogadores
+  -double valor
+  +temLider() boolean
+}
+
+Jogador <|-- JogadorDeLinha
+Jogador <|-- Goleiro
+RuntimeException <|-- RachaException
+RachaException <|-- CadastroInvalidoException
+RachaException <|-- JogadorNaoConfirmadoException
+RachaException <|-- SorteioInvalidoException
+RachaException <|-- NotaInvalidaException
+RachaException <|-- TorneioInvalidoException
+Pagavel <|.. Jogador
+Avaliavel <|.. Jogador
+EstrategiaSorteio <|.. SorteioEquilibrado
+EstrategiaSorteio <|.. SorteioAleatorio
+Fase <|-- FaseDeGrupos
+Fase <|-- FaseEliminatoria
+Partida <|-- PartidaEliminatoria
+
+Jogador "1" *-- "1" EstatisticaJogador
+Racha "1" *-- "2..*" Time : times
+Racha "1" *-- "0..1" FaseDeGrupos
+Racha "1" *-- "0..1" FaseEliminatoria
+Fase "1" *-- "0..*" Partida : partidas
+FaseDeGrupos "1" *-- "1..*" Grupo
+Grupo "1" *-- "0..*" LinhaClassificacao
+Grupo "1" o-- "2..*" Time
+Partida "1" *-- "0..*" DesempenhoJogador
+Racha "0..*" o-- "0..*" Jogador : confirmados
+Time "0..*" o-- "0..*" Jogador : escalados
+Escalacao "1" o-- "1..*" Jogador
+CadastroJogadores "1" o-- "0..*" Jogador
+GerenciadorRachas "1" o-- "0..*" Racha
+
+Jogador --> "1" Posicao
+Racha --> "1" StatusRacha
+Partida "1" --> "2" Time : timeA / timeB
+DesempenhoJogador "0..*" --> "1" Jogador
+LinhaClassificacao --> "1" Time
+LiderEstatistica --> "1" TipoEstatistica
+LiderEstatistica "0..*" o-- "0..*" Jogador
+GerenciadorRachas --> CadastroJogadores
+RankingService --> CadastroJogadores
+RankingService --> GerenciadorRachas
+RankingService ..> LiderEstatistica : cria
+Racha ..> EstrategiaSorteio : usa
+EstrategiaSorteio ..> Time : cria
+Time ..> Escalacao : cria
+Time ..> Goleiro
+
+Jogador ..> CadastroInvalidoException : throws
+Jogador ..> NotaInvalidaException : throws
+DesempenhoJogador ..> NotaInvalidaException : throws
+Racha ..> SorteioInvalidoException : throws
+Racha ..> TorneioInvalidoException : throws
+Racha ..> JogadorNaoConfirmadoException : throws
+Partida ..> JogadorNaoConfirmadoException : throws
+</script>
