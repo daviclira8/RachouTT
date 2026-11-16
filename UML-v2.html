@@ -1,3 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UML – Sistema de Gerenciamento de Rachas</title>
+<style>
+:root{--bg:#f4f6f9;--surface:#fff;--text:#1b2330;--muted:#5b6678;--border:#d5dae3;--accent:#1f5fbf;
+color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--surface:#181d25;--text:#e6e9ef;--muted:#9aa5b8;--border:#2c3442;--accent:#6ea2ff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161c;--surface:#181d25;--text:#e6e9ef;--muted:#9aa5b8;--border:#2c3442;--accent:#6ea2ff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border)}
+h1{font-size:15px;margin:0}
+small{color:var(--muted)}
+.tools{display:flex;align-items:center;gap:6px}
+button{min-width:36px;height:36px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--accent)}
+#pct{min-width:48px;text-align:center;font-variant-numeric:tabular-nums;color:var(--muted)}
+#vp{position:relative;flex:1;min-height:0;overflow:hidden;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+background-color:var(--surface);background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:20px 20px}
+#vp.grab{cursor:grabbing}
+#stage{position:absolute;left:0;top:0;transform-origin:0 0}
+#stage svg{display:block;max-width:none}
+#msg{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);pointer-events:none}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Diagrama de Classes – Sistema de Gerenciamento de Rachas</h1>
+  <small>Arraste para mover · role ou use pinça para dar zoom · teclas + − 0</small></div>
+  <div class="tools">
+    <button id="out" title="Diminuir zoom" aria-label="Diminuir zoom">−</button>
+    <span id="pct">100%</span>
+    <button id="in" title="Aumentar zoom" aria-label="Aumentar zoom">+</button>
+    <button id="fit" title="Ajustar à tela">Ajustar</button>
+    <button id="one" title="Tamanho real">100%</button>
+  </div>
+</header>
+<div id="vp"><div id="stage"></div><div id="msg">Carregando diagrama…</div></div>
+
 <script type="text/plain" id="src">
 classDiagram
 direction TB
@@ -304,3 +347,97 @@ Racha ..> TorneioInvalidoException : throws
 Racha ..> JogadorNaoConfirmadoException : throws
 Partida ..> JogadorNaoConfirmadoException : throws
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const vp = $('#vp'), st = $('#stage'), pct = $('#pct');
+let k = 1, x = 0, y = 0, W = 1, H = 1;
+const MIN = 0.05, MAX = 6;
+
+function apply() {
+  st.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + k + ')';
+  pct.textContent = Math.round(k * 100) + '%';
+}
+function zoomAt(f, cx, cy) {
+  const n = Math.min(MAX, Math.max(MIN, k * f));
+  f = n / k; x = cx - (cx - x) * f; y = cy - (cy - y) * f; k = n; apply();
+}
+function zoomCenter(f) {
+  const r = vp.getBoundingClientRect(); zoomAt(f, r.width / 2, r.height / 2);
+}
+function fit() {
+  const r = vp.getBoundingClientRect();
+  k = Math.min(r.width / W, r.height / H, 1.5) * 0.95;
+  x = (r.width - W * k) / 2; y = (r.height - H * k) / 2; apply();
+}
+
+$('#in').onclick = () => zoomCenter(1.25);
+$('#out').onclick = () => zoomCenter(0.8);
+$('#fit').onclick = fit;
+$('#one').onclick = () => zoomCenter(1 / k);
+
+vp.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = vp.getBoundingClientRect();
+  const d = e.deltaY * (e.deltaMode === 1 ? 16 : 1);
+  zoomAt(Math.exp(-d * (e.ctrlKey ? 0.01 : 0.0015)), e.clientX - r.left, e.clientY - r.top);
+}, { passive: false });
+
+const P = new Map(); let d0 = 0;
+vp.addEventListener('pointerdown', e => {
+  vp.setPointerCapture(e.pointerId);
+  P.set(e.pointerId, [e.clientX, e.clientY]); d0 = 0; vp.classList.add('grab');
+});
+vp.addEventListener('pointermove', e => {
+  if (!P.has(e.pointerId)) return;
+  const o = P.get(e.pointerId);
+  P.set(e.pointerId, [e.clientX, e.clientY]);
+  if (P.size === 1) { x += e.clientX - o[0]; y += e.clientY - o[1]; apply(); }
+  else if (P.size === 2) {
+    const [a, b] = [...P.values()], r = vp.getBoundingClientRect();
+    const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    if (d0) zoomAt(d / d0, (a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top);
+    d0 = d;
+  }
+});
+const up = e => { P.delete(e.pointerId); d0 = 0; if (!P.size) vp.classList.remove('grab'); };
+vp.addEventListener('pointerup', up);
+vp.addEventListener('pointercancel', up);
+
+document.addEventListener('keydown', e => {
+  const s = 60;
+  if (e.key === '+' || e.key === '=') zoomCenter(1.25);
+  else if (e.key === '-' || e.key === '_') zoomCenter(0.8);
+  else if (e.key === '0') fit();
+  else if (e.key === '1') zoomCenter(1 / k);
+  else if (e.key === 'ArrowLeft') { x += s; apply(); }
+  else if (e.key === 'ArrowRight') { x -= s; apply(); }
+  else if (e.key === 'ArrowUp') { y += s; apply(); }
+  else if (e.key === 'ArrowDown') { y -= s; apply(); }
+});
+window.addEventListener('resize', () => { if (W > 1) fit(); });
+
+(async () => {
+  try {
+    const t = document.documentElement.dataset.theme;
+    const dark = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+    mermaid.initialize({
+      startOnLoad: false, theme: dark ? 'dark' : 'neutral', maxTextSize: 90000,
+      securityLevel: 'strict', class: { useMaxWidth: false }
+    });
+    const { svg } = await mermaid.render('uml', $('#src').textContent.trim());
+    st.innerHTML = svg;
+    const s = st.querySelector('svg'), vb = s.viewBox.baseVal;
+    W = vb.width; H = vb.height;
+    s.removeAttribute('style'); s.setAttribute('width', W); s.setAttribute('height', H);
+    $('#msg').remove();
+    fit();
+  } catch (err) {
+    $('#msg').textContent = 'Não foi possível desenhar o diagrama. Verifique a conexão e recarregue.';
+    console.error(err);
+  }
+})();
+</script>
+</body>
+</html>
