@@ -1,4 +1,17 @@
 package jogador;
-public class CadastroInvalidoException {
+
+import racha.RachaException;
+
+public class CadastroInvalidoException extends RachaException {
+    private String campo;
+
+    public CadastroInvalidoException(String campo, String mensagem){
+        super(mensagem);
+        this.campo = campo;
+    }
+
+    public String getCampo(){
+        return campo;
+    }
     
 }
