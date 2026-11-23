@@ -11,3 +11,4 @@ public class CadastroInvalidoException  extends Exception{
         return campoErro;
     }
 }
+//Acho melhor essa ser uma exceção checkada, apesar da uml dizer outra coisa.
