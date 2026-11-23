@@ -1,4 +1,7 @@
 package racha;
-public class RachaException {
-    
+
+public class RachaException extends RuntimeException{
+    public RachaException(String mensagem){
+        super(mensagem);
+    }
 }
