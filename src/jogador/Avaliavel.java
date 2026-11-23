@@ -1,4 +1,5 @@
 package jogador;
-public class Avaliavel {
-    
+public interface Avaliavel {
+    public void addNota(double nota);
+    public double getNotaGeral();
 }

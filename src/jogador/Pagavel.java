@@ -1,4 +1,7 @@
 package jogador;
-public class Pagavel {
-    
+public interface Pagavel {
+
+    public double calcularValorAPagar(double custoPorPessoa);
+
+    public boolean isIsento();
 }
