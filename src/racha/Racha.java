@@ -1,6 +1,4 @@
 package racha;
-package jogador;
-package fases;
 import jogador.Jogador;
 import jogador.Time;
 import fases.FaseDeGrupos;
@@ -60,6 +58,50 @@ public class Racha {
 
     }
 
+    public Long getId() {
+        return id;
+    }
 
+    public LocalDate getData() {
+        return data;
+    }
+
+    public String getLocal() {
+        return local;
+    }
+
+    public BigDecimal getCustoTotal() {
+        return custoTotal;
+    }
+
+    public int getQtdTimes() {
+        return qtdTimes;
+    }
+
+    public StatusRacha getStatus() {
+        return status;
+    }
+
+    public Set<Jogador> getConfirmados(){
+        return Set.copyOf(confirmados);
+    }
+    
+    public List<Time> getTimes(){
+        return List.copyOf(times);
+    }
+
+    public void confirmarPresenca(Jogador j){
+        if(j == null){
+            throw new RachaException("Jogador nulo");
+        }
+        if(!status.permiteConfirmacao()){
+            throw new RachaException("O racha não permite configurações.");
+        }
+        boolean adicionado = confirmados.add(j);
+        if(!adicionado){
+            throw new RachaException("O jogador já está confirmado");
+        }
+
+    }
 
 }   
